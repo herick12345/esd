@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import app.App;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class EsdController {
 
     private final App app = new App();
@@ -43,12 +44,19 @@ public class EsdController {
     @GetMapping("/geoip")
     ResponseEntity<Localidade> meu_local(HttpServletRequest req) {
         String ip = get_remote_ip(req);
+        System.out.println("Consultando IP detectado: " + ip);
 
         return busca_local(ip);
     }
 
     @GetMapping("/geoip/{ip}")
     ResponseEntity<Localidade> meu_local(@PathVariable String ip) {
+        System.out.println("Consultando IP informado: " + ip);
         return busca_local(ip);
+    }
+    
+    @GetMapping("/stats")
+    ResponseEntity<String> estatisticas() {
+        return ResponseEntity.ok(app.getStats());
     }
 }

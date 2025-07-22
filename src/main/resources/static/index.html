@@ -3,86 +3,497 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Consulta de Localização por IP</title>
+    <title>Geolocalizador IP - IFSC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
-        input, button, select {
-            padding: 8px;
-            margin: 10px 0;
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease;
         }
-        #resultado {
-            margin-top: 20px;
-            font-weight: bold;
+
+        .container:hover {
+            transform: translateY(-5px);
         }
-        #campo-ip {
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .header .institution {
+            color: #764ba2;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .mode-selector {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .mode-selector:hover {
+            border-color: #667eea;
+        }
+
+        .mode-selector label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .mode-select {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .mode-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ip-input-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
             display: none;
+        }
+
+        .ip-input-section.active {
+            display: block;
+            border-color: #667eea;
+        }
+
+        .ip-input-section label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .ip-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .ip-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .result-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: left;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .examples h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .example-ips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .example-ip {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .example-ip:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .result-info {
+                grid-template-columns: 1fr;
+            }
+
+            .example-ips {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
 <body>
-<h1>Consulta de Localização por Endereço IP</h1>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-globe-americas"></i> Geolocalizador IP</h1>
+            <div class="subtitle">Descubra a localização geográfica de qualquer endereço IP</div>
+            <div class="institution">Instituto Federal de Santa Catarina - IFSC</div>
+        </div>
 
-<label for="modo">Escolha o modo de consulta:</label><br />
-<select id="modo" onchange="alternarModo()">
-    <option value="meu">Meu IP (automático)</option>
-    <option value="outro">Informar outro IP</option>
-</select>
+        <div class="form-section">
+            <div class="mode-selector">
+                <label for="modo"><i class="fas fa-cog"></i> Modo de Consulta:</label>
+                <select id="modo" class="mode-select" onchange="alternarModo()">
+                    <option value="meu">🔍 Detectar meu IP automaticamente</option>
+                    <option value="outro">✏️ Informar outro endereço IP</option>
+                </select>
+            </div>
 
-<div id="campo-ip">
-    <label for="ip">Endereço IP:</label><br />
-    <input type="text" id="ip" placeholder="Ex: 8.8.8.8" />
-</div>
+            <div id="campo-ip" class="ip-input-section">
+                <label for="ip"><i class="fas fa-network-wired"></i> Endereço IP:</label>
+                <input type="text" id="ip" class="ip-input" placeholder="Ex: 8.8.8.8" />
+            </div>
 
-<button onclick="consultar()">Consultar</button>
+            <button class="search-button" onclick="consultar()">
+                <i class="fas fa-search"></i>
+                <span id="button-text">Consultar Localização</span>
+            </button>
+        </div>
 
-<div id="resultado"></div>
+        <div class="result-section">
+            <div id="resultado"></div>
+        </div>
 
-<script>
-    function alternarModo() {
-        const modo = document.getElementById('modo').value;
-        const campoIP = document.getElementById('campo-ip');
-        document.getElementById('resultado').textContent = '';
-        campoIP.style.display = (modo === 'outro') ? 'block' : 'none';
-    }
+        <div class="examples">
+            <h4><i class="fas fa-lightbulb"></i> IPs de exemplo para testar:</h4>
+            <div class="example-ips">
+                <span class="example-ip" onclick="testarIP('8.8.8.8')">8.8.8.8 (Google DNS)</span>
+                <span class="example-ip" onclick="testarIP('1.1.1.1')">1.1.1.1 (Cloudflare)</span>
+                <span class="example-ip" onclick="testarIP('208.67.222.222')">208.67.222.222 (OpenDNS)</span>
+                <span class="example-ip" onclick="testarIP('9.9.9.9')">9.9.9.9 (Quad9)</span>
+            </div>
+        </div>
+    </div>
 
-    async function consultar() {
-        const modo = document.getElementById('modo').value;
-        const resultado = document.getElementById('resultado');
-        let url = '/geoip';
-
-        if (modo === 'outro') {
-            const ip = document.getElementById('ip').value.trim();
-            if (!ip) {
-                resultado.textContent = 'Digite um endereço IP.';
-                return;
+    <script>
+        function alternarModo() {
+            const modo = document.getElementById('modo').value;
+            const campoIP = document.getElementById('campo-ip');
+            const resultado = document.getElementById('resultado');
+            
+            resultado.innerHTML = '';
+            
+            if (modo === 'outro') {
+                campoIP.classList.add('active');
+                document.getElementById('ip').focus();
+            } else {
+                campoIP.classList.remove('active');
             }
-            url = `/geoip/${ip}`;
         }
 
-        try {
-            resultado.textContent = 'Consultando...';
-            const response = await fetch(url);
-            const dados = await response.json();
+        function testarIP(ip) {
+            document.getElementById('modo').value = 'outro';
+            alternarModo();
+            document.getElementById('ip').value = ip;
+            consultar();
+        }
 
-            if (!dados.pais && !dados.local) {
-                resultado.textContent = 'Dados de localização não disponíveis.';
-                return;
+        async function consultar() {
+            const modo = document.getElementById('modo').value;
+            const resultado = document.getElementById('resultado');
+            const buttonText = document.getElementById('button-text');
+            const button = document.querySelector('.search-button');
+            
+            let url = '/geoip';
+            let ipConsultado = 'Seu IP';
+
+            if (modo === 'outro') {
+                const ip = document.getElementById('ip').value.trim();
+                if (!ip) {
+                    mostrarErro('Por favor, digite um endereço IP válido.');
+                    return;
+                }
+                
+                // Validação básica de IP
+                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                if (!ipRegex.test(ip)) {
+                    mostrarErro('Formato de IP inválido. Use o formato: 192.168.1.1');
+                    return;
+                }
+                
+                url = `/geoip/${ip}`;
+                ipConsultado = ip;
             }
 
+            // Estado de carregamento
+            button.disabled = true;
+            buttonText.textContent = 'Consultando...';
+            resultado.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Buscando localização...</div>';
+
+            try {
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const dados = await response.json();
+
+                if (!dados || (!dados.pais && !dados.local)) {
+                    mostrarErro('Dados de localização não disponíveis para este IP.');
+                    return;
+                }
+
+                mostrarResultado(ipConsultado, dados);
+
+            } catch (error) {
+                console.error('Erro na consulta:', error);
+                mostrarErro('Não foi possível localizar este endereço IP. Verifique se o IP está correto e tente novamente.');
+            } finally {
+                // Restaura o botão
+                button.disabled = false;
+                buttonText.textContent = 'Consultar Localização';
+            }
+        }
+
+        function mostrarResultado(ip, dados) {
+            const resultado = document.getElementById('resultado');
+            
+            const pais = dados.pais || 'Não identificado';
+            const local = dados.local || 'Não identificado';
+            
             resultado.innerHTML = `
-          <p><strong>País:</strong> ${dados.pais || 'N/A'}</p>
-          <p><strong>Localidade:</strong> ${dados.local || 'N/A'}</p>
-        `;
-        } catch (error) {
-            resultado.textContent = 'Localidade deste endereço é desconhecida';
-            console.error(error);
+                <div class="result-card">
+                    <h3><i class="fas fa-map-marker-alt"></i> Localização Encontrada</h3>
+                    <div class="result-info">
+                        <div class="info-item">
+                            <div class="info-label">Endereço IP</div>
+                            <div class="info-value">${ip}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">País</div>
+                            <div class="info-value">${pais}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Localidade</div>
+                            <div class="info-value">${local}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div class="info-value"><i class="fas fa-check-circle"></i> Localizado</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Animação de entrada
+            setTimeout(() => {
+                const card = resultado.querySelector('.result-card');
+                if (card) card.classList.add('show');
+            }, 100);
         }
-    }
 
-    alternarModo();
-</script>
+        function mostrarErro(mensagem) {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = `
+                <div class="result-card error-message">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Erro na Consulta</h3>
+                    <p>${mensagem}</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                const card = resultado.querySelector('.result-card');
+                if (card) card.classList.add('show');
+            }, 100);
+        }
+
+        // Permite consulta com Enter
+        document.getElementById('ip').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                consultar();
+            }
+        });
+
+        // Inicialização
+        alternarModo();
+    </script>
 </body>
 </html>

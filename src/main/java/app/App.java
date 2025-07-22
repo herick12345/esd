@@ -1,280 +1,489 @@
-package app;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>GeoLocalizador IP - IFSC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-import java.io.*;
-import java.util.Scanner;
-import esd.ListaSequencial;
-import esd.TabHash;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-/*
-Para testar seu programa, execute-e e então acesse o seguinte link:
-http://localhost:8080/
- */
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
 
-/** Classe que representa a aplicação. O nome dela obrigatoriamente deve ser App
- * @author Marcelo M. Sobral
- * @version 1.0
- */
-public class App {
+        .header {
+            margin-bottom: 30px;
+        }
 
-    // os arquivos geolite com os blocos IPv4 e as desccrições das localidades
-    final String IPV4_BLOCKS = "GeoLite2-City-Blocks-IPv4.csv";
-    final String CITY_LOCATIONS = "GeoLite2-City-Locations-pt-BR.csv";
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
 
-    // Estruturas de dados para armazenar os dados de geolocalização
-    private ListaSequencial<IPRange> ipRanges;
-    private TabHash<Integer, LocationInfo> locations;
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
 
-    /*
-    Construtor da App: processa os arquivos de dados do GeoLite
-    @throws            Dispara uma exceção InvalidParameterException se não puder ler o arquivo, ou seu conteúdo for inválido
-     */
-    public App() {
-        // Inicializa as estruturas de dados
-        ipRanges = new ListaSequencial<>();
-        locations = new TabHash<>();
+        .header .institute {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .mode-selector {
+            margin-bottom: 25px;
+        }
+
+        .mode-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ip-input-section {
+            margin: 25px 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .ip-input-section.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .ip-input-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            min-width: 150px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .result-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: left;
+        }
+
+        .result-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .result-item strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .result-item span {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .loading i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .success {
+            background: #51cf66;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .examples {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .examples h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .example-ips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .example-ip {
+            background: #e9ecef;
+            color: #495057;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .example-ip:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .result-info {
+                grid-template-columns: 1fr;
+            }
+
+            .example-ips {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-globe-americas"></i> GeoLocalizador IP</h1>
+            <div class="subtitle">Descubra a localização geográfica de qualquer endereço IP</div>
+            <div class="institute">Instituto Federal de Santa Catarina - IFSC</div>
+        </div>
+
+        <div class="form-section">
+            <div class="mode-selector">
+                <label for="modo"><i class="fas fa-cog"></i> Modo de Consulta:</label>
+                <select id="modo" onchange="alternarModo()">
+                    <option value="meu">🔍 Detectar meu IP automaticamente</option>
+                    <option value="outro">✏️ Informar outro endereço IP</option>
+                </select>
+            </div>
+
+            <div id="campo-ip" class="ip-input-section">
+                <label for="ip"><i class="fas fa-network-wired"></i> Endereço IP:</label>
+                <div class="input-group">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="ip" placeholder="Ex: 8.8.8.8, 1.1.1.1, 208.67.222.222" />
+                </div>
+                
+                <div class="examples">
+                    <h4>Exemplos para testar:</h4>
+                    <div class="example-ips">
+                        <span class="example-ip" onclick="setExampleIP('8.8.8.8')">8.8.8.8</span>
+                        <span class="example-ip" onclick="setExampleIP('1.1.1.1')">1.1.1.1</span>
+                        <span class="example-ip" onclick="setExampleIP('208.67.222.222')">208.67.222.222</span>
+                        <span class="example-ip" onclick="setExampleIP('4.4.4.4')">4.4.4.4</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="consultar()" id="btnConsultar">
+                <i class="fas fa-search"></i> Consultar Localização
+            </button>
+        </div>
+
+        <div class="result-section" id="resultado">
+            <!-- Resultado será inserido aqui -->
+        </div>
+    </div>
+<script>
+    let isLoading = false;
+
+    function alternarModo() {
+        const modo = document.getElementById('modo').value;
+        const campoIP = document.getElementById('campo-ip');
+        limparResultado();
         
-        // Carrega os dados dos arquivos
-        InputStream ipv4_blocks = ClassLoader.getSystemResourceAsStream(IPV4_BLOCKS);
-        InputStream city_locations = ClassLoader.getSystemResourceAsStream(CITY_LOCATIONS);
-
-        try {
-            loadCityLocations(city_locations);
-            loadIPv4Blocks(ipv4_blocks);
-            
-            // Ordena os ranges de IP para busca binária
-            ipRanges.ordena();
-            
-            System.out.println("Dados carregados com sucesso!");
-            System.out.println("Ranges de IP: " + ipRanges.comprimento());
-            System.out.println("Localizações: " + locations.comprimento());
-            
-        } catch (Exception e) {
-            System.err.println("Erro ao carregar dados de geolocalização: " + e.getMessage());
-            e.printStackTrace();
+        if (modo === 'outro') {
+            campoIP.classList.add('show');
+        } else {
+            campoIP.classList.remove('show');
         }
     }
-    
-    /**
-     * Carrega as informações de localização das cidades
-     */
-    private void loadCityLocations(InputStream inputStream) throws IOException {
-        if (inputStream == null) {
-            System.out.println("Arquivo de localizações não encontrado. Usando dados de exemplo.");
-            // Adiciona algumas localizações de exemplo
-            locations.adiciona(1, new LocationInfo(1, "BR", "São Paulo"));
-            locations.adiciona(2, new LocationInfo(2, "US", "New York"));
-            locations.adiciona(3, new LocationInfo(3, "GB", "London"));
+
+    function setExampleIP(ip) {
+        document.getElementById('ip').value = ip;
+        document.getElementById('modo').value = 'outro';
+        alternarModo();
+    }
+
+    function limparResultado() {
+        const resultado = document.getElementById('resultado');
+        resultado.innerHTML = '';
+    }
+
+    function mostrarLoading() {
+        const resultado = document.getElementById('resultado');
+        resultado.innerHTML = `
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                Consultando localização...
+            </div>
+        `;
+        isLoading = true;
+        document.getElementById('btnConsultar').disabled = true;
+    }
+
+    function esconderLoading() {
+        isLoading = false;
+        document.getElementById('btnConsultar').disabled = false;
+    }
+
+    function mostrarResultado(dados, ip) {
+        const resultado = document.getElementById('resultado');
+        
+        if (!dados || (!dados.pais && !dados.local)) {
+            resultado.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Localização não encontrada</strong><br>
+                    Não foi possível determinar a localização para o IP: ${ip}
+                </div>
+            `;
             return;
         }
+
+        const pais = dados.pais || 'N/A';
+        const local = dados.local || 'N/A';
         
-        try (Scanner scanner = new Scanner(inputStream, "UTF-8")) {
-            // Pula o cabeçalho
-            if (scanner.hasNextLine()) {
-                scanner.nextLine();
-            }
-            
-            int count = 0;
-            while (scanner.hasNextLine() && count < 10000) { // Limita para não sobrecarregar
-                String line = scanner.nextLine().trim();
-                if (line.isEmpty()) continue;
-                
-                try {
-                    String[] parts = parseCSVLine(line);
-                    if (parts.length >= 5) {
-                        int geonameId = Integer.parseInt(parts[0]);
-                        String countryCode = parts[4];
-                        String cityName = parts.length > 10 ? parts[10] : "";
-                        
-                        if (geonameId > 0) {
-                            locations.adiciona(geonameId, new LocationInfo(geonameId, countryCode, cityName));
-                            count++;
-                        }
-                    }
-                } catch (Exception e) {
-                    // Ignora linhas com erro
-                }
-            }
-            System.out.println("Carregadas " + count + " localizações");
-        }
-    }
-    
-    /**
-     * Carrega os blocos de IP
-     */
-    private void loadIPv4Blocks(InputStream inputStream) throws IOException {
-        if (inputStream == null) {
-            System.out.println("Arquivo de blocos IP não encontrado. Usando dados de exemplo.");
-            // Adiciona alguns ranges de exemplo
-            ipRanges.adiciona(new IPRange(IPUtils.ipToLong("8.8.8.0"), IPUtils.ipToLong("8.8.8.255"), 1));
-            ipRanges.adiciona(new IPRange(IPUtils.ipToLong("1.1.1.0"), IPUtils.ipToLong("1.1.1.255"), 2));
-            ipRanges.adiciona(new IPRange(IPUtils.ipToLong("208.67.222.0"), IPUtils.ipToLong("208.67.222.255"), 3));
-            return;
-        }
+        resultado.innerHTML = `
+            <div class="result-card">
+                <h3><i class="fas fa-map-marked-alt"></i> Localização Encontrada</h3>
+                <div class="result-info">
+                    <div class="result-item">
+                        <strong><i class="fas fa-flag"></i> País:</strong>
+                        <span>${pais}</span>
+                    </div>
+                    <div class="result-item">
+                        <strong><i class="fas fa-city"></i> Localidade:</strong>
+                        <span>${local}</span>
+                    </div>
+                </div>
+            </div>
+        `;
         
-        try (Scanner scanner = new Scanner(inputStream, "UTF-8")) {
-            // Pula o cabeçalho
-            if (scanner.hasNextLine()) {
-                scanner.nextLine();
-            }
-            
-            int count = 0;
-            while (scanner.hasNextLine() && count < 50000) { // Limita para não sobrecarregar
-                String line = scanner.nextLine().trim();
-                if (line.isEmpty()) continue;
-                
-                try {
-                    String[] parts = parseCSVLine(line);
-                    if (parts.length >= 2) {
-                        String network = parts[0];
-                        String geonameIdStr = parts[1];
-                        
-                        if (!geonameIdStr.isEmpty()) {
-                            int geonameId = Integer.parseInt(geonameIdStr);
-                            
-                            // Parse CIDR notation (e.g., "1.0.0.0/24")
-                            String[] networkParts = network.split("/");
-                            if (networkParts.length == 2) {
-                                String baseIP = networkParts[0];
-                                int prefixLength = Integer.parseInt(networkParts[1]);
-                                
-                                long startIP = IPUtils.ipToLong(baseIP);
-                                long mask = (0xFFFFFFFFL << (32 - prefixLength)) & 0xFFFFFFFFL;
-                                startIP = startIP & mask;
-                                long endIP = startIP | (0xFFFFFFFFL >> prefixLength);
-                                
-                                ipRanges.adiciona(new IPRange(startIP, endIP, geonameId));
-                                count++;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    // Ignora linhas com erro
-                }
-            }
-            System.out.println("Carregados " + count + " ranges de IP");
-        }
-    }
-    
-    /**
-     * Parse de linha CSV considerando aspas
-     */
-    private String[] parseCSVLine(String line) {
-        ListaSequencial<String> result = new ListaSequencial<>();
-        StringBuilder current = new StringBuilder();
-        boolean inQuotes = false;
-        
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                result.adiciona(current.toString().trim());
-                current = new StringBuilder();
-            } else {
-                current.append(c);
-            }
-        }
-        result.adiciona(current.toString().trim());
-        
-        String[] array = new String[result.comprimento()];
-        for (int i = 0; i < result.comprimento(); i++) {
-            array[i] = result.obtem(i);
-        }
-        return array;
+        // Anima a entrada do resultado
+        setTimeout(() => {
+            const card = resultado.querySelector('.result-card');
+            if (card) card.classList.add('show');
+        }, 100);
     }
 
-    /*
-    Retorna a localidade associada ao endreço IP
-    @return um objeto Localidade contendo as informações da localidade, o null se não encontrá-lo
-     */
-    public Localidade busca_localidade(String ip) {
-        if (ip == null || ip.trim().isEmpty()) {
-            return null;
-        }
+    function mostrarErro(mensagem) {
+        const resultado = document.getElementById('resultado');
+        resultado.innerHTML = `
+            <div class="error">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Erro na consulta</strong><br>
+                ${mensagem}
+            </div>
+        `;
+    }
+
+    async function consultar() {
+        if (isLoading) return;
         
+        const modo = document.getElementById('modo').value;
+        let url = '/geoip';
+        let ipConsultado = 'seu IP';
+
+        if (modo === 'outro') {
+            const ip = document.getElementById('ip').value.trim();
+            if (!ip) {
+                resultado.textContent = 'Digite um endereço IP.';
+                return;
+            }
+            url = `/geoip/${ip}`;
+        }
+
         try {
-            // Converte o IP para formato numérico
-            long ipLong = IPUtils.ipToLong(ip.trim());
-            
-            // Busca o range que contém este IP
-            IPRange range = findIPRange(ipLong);
-            if (range == null) {
-                return null;
+            resultado.textContent = 'Consultando...';
+            const response = await fetch(url);
+            const dados = await response.json();
+
+            if (!dados.pais && !dados.local) {
+                resultado.textContent = 'Dados de localização não disponíveis.';
+                return;
             }
-            
-            // Busca as informações de localização
-            LocationInfo locationInfo = locations.obtem_ou_default(range.getGeonameId(), null);
-            if (locationInfo == null) {
-                return new Localidade("--", "Localização desconhecida");
-            }
-            
-            String pais = locationInfo.getCountryCode();
-            String cidade = locationInfo.getCityName();
-            
-            if (cidade.isEmpty()) {
-                cidade = "Cidade desconhecida";
-            }
-            
-            return new Localidade(pais, cidade);
-            
-        } catch (Exception e) {
-            System.err.println("Erro ao buscar localidade para IP " + ip + ": " + e.getMessage());
-            return null;
+
+            resultado.innerHTML = `
+          <p><strong>País:</strong> ${dados.pais || 'N/A'}</p>
+          <p><strong>Localidade:</strong> ${dados.local || 'N/A'}</p>
+        `;
+        } catch (error) {
+            resultado.textContent = 'Localidade deste endereço é desconhecida';
+            console.error(error);
         }
     }
-    
-    /**
-     * Encontra o range de IP que contém o IP especificado usando busca binária
-     */
-    private IPRange findIPRange(long ip) {
-        int left = 0;
-        int right = ipRanges.comprimento() - 1;
-        
-        while (left <= right) {
-            int mid = left + (right - left) / 2;
-            IPRange range = ipRanges.obtem(mid);
-            
-            if (range.contains(ip)) {
-                return range;
-            } else if (ip < range.getStartIP()) {
-                right = mid - 1;
-            } else {
-                left = mid + 1;
-            }
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Método para obter estatísticas do sistema
-     */
-    public String getStats() {
-        return String.format("Ranges de IP: %d, Localizações: %d", 
-                           ipRanges.comprimento(), locations.comprimento());
-    }
-    
-    /**
-     * Método para testar alguns IPs conhecidos
-     */
-    public void testKnownIPs() {
-        String[] testIPs = {"8.8.8.8", "1.1.1.1", "208.67.222.222", "192.168.1.1"};
-        
-        System.out.println("\n=== Testando IPs conhecidos ===");
-        for (String ip : testIPs) {
-            Localidade loc = busca_localidade(ip);
-            if (loc != null) {
-                System.out.println(ip + " -> " + loc.pais() + ", " + loc.local());
-            } else {
-                System.out.println(ip + " -> Não encontrado");
-            }
-        }
-    }
-}
 
-
-        return new Localidade("BR", "Pindorama");
-    }
-
-}
+    alternarModo();
+</script>
+</body>
+</html>
